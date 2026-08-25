@@ -472,7 +472,7 @@ Two parallel tracks. The **Space Track** builds against synthetic data from Spri
 - [ ] Scaffold: Vite + React + TS + R3F. Deploy to `aliquot.pages.dev` **on day one** so the deploy path is proven early.
 - [ ] Scaffold the C# ETL console app + SQLite schema for the 5 node types and 7 edge types — **including `Person.handles[]` and `display_preference` from the start** (§2.1b). Retrofitting identity fields after 1,500 people are loaded is miserable.
 - [ ] Build the HTTP cache layer (disk-backed, keyed by URL) and rate limiter.
-- [ ] **Set up the Airtable base(s)** for §1.7c — a Credentials table (you, role, password hash) at minimum. Decide now whether entity tokens/emails share that base or get their own, given the 1,000-record-per-base free cap.
+- [x] ~~Set up the Airtable base(s) for §1.7c.~~ **Done — two bases, as the plan recommended.** `Aliquot Credentials` (just the `Credentials` table) kept separate from `Aliquot Claims` (`Claims` + `Admin Queue` tables), so entity-claim growth never threatens the Credentials base's headroom under the 1,000-record cap. See `docs/DECISIONS.md`.
 - [x] ~~Get permission.~~ **Zach (the founder) gave his blessing.** Two follow-ups still open, worth asking while the conversation's warm rather than as a separate outreach later: how contributors want to be credited (name, handle, or both — §2.1b), and **whether original masters from contributing bands still exist anywhere** (§1.9) — likely the cleanest backup source there is.
 - [ ] Spike R1: can you extract Bandcamp track embed IDs programmatically? **Separately: can you get an actual downloadable audio file out of the embed, or only a stream?** Different question, and §1.9's backup plan depends on the answer. (see Risks)
 

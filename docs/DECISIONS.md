@@ -10,3 +10,13 @@ Every architecture call, with a date and one line of reasoning (§8). Newest fir
 - **HTTP resilience:** `Polly` for retry/backoff, a fixed-interval `RateLimiter`, and a SHA-256-keyed `DiskResponseCache` so every API response is cached to disk on first fetch (§4, §8).
 - **Password hashing (future, §1.7c):** `BCrypt.Net-Next`, added to the ETL project now so the admin-app credentials work in Sprint 4 doesn't need a new dependency.
 - **Repo:** public on GitHub, per §1.7's reasoning (keeps Actions unmetered) and the templating goal.
+- **Hosting:** Cloudflare Pages, project `aliquot`, live at `aliquot.pages.dev` (§1.4). Deployed manually via `wrangler pages deploy` to prove the path on day one (§8); Git integration connected afterward in the Cloudflare dashboard so pushes to `main` auto-deploy going forward.
+
+## 2026-08-24 — Airtable base structure (§1.7c)
+
+- **Two bases, not one**, per the plan's own recommendation — keeps Credentials' tiny, near-zero record count from ever being a factor in whether the entity-claims base is near its 1,000-record free-tier cap, and vice versa.
+- **`Aliquot Credentials`** — one table, `Credentials` (email, password hash, role: `moderator`/`admin`, created/last-login dates). Stays small forever — only ever as many rows as there are moderators.
+- **`Aliquot Claims`** — two tables:
+  - `Claims` — one row per claimed/claimable Person or Artist: entity id/type/name, contact email, claim token, issued date, status. This is the one that can grow into the hundreds.
+  - `Admin Queue` — the single shared queue for both claim requests and "suggest a new member" submissions (§1.6, §1.7), deliberately one table rather than two review systems. No linked-record field between the two tables — a new-member suggestion has no `Claims` row yet to link to, so both just carry a plain-text Entity ID.
+- Base IDs and a Personal Access Token to be recorded in the gitignored `appsettings.Local.json` when the admin app is actually built (Sprint 4) — nothing Airtable-related goes in the repo itself.
