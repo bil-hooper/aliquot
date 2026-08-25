@@ -1,0 +1,26 @@
+# Frontend (web/)
+web/node_modules/
+web/dist/
+web/dist-ssr/
+*.local
+
+# ETL (etl/) — the SQLite file itself is the source of truth and IS committed (§8).
+# Only the disk-backed HTTP cache and build output are excluded.
+etl/.cache/
+etl/bin/
+etl/obj/
+
+# Local secrets — Airtable key, HMAC shared secret, GitHub token (§1.7c). Never committed.
+appsettings.Local.json
+**/appsettings.Local.json
+.env
+.env.local
+
+# Editor / OS
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
