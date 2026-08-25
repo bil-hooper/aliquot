@@ -12,16 +12,23 @@
       3. Writes the parsed JSON to disk, one file per album, skipping albums
          already harvested so a run can be stopped and resumed freely.
 
-    Only the tribute series' landing page and its /album/ pages are requested -
-    both allowed under bandcamp.com's robots.txt for a generic, honestly
-    identified User-Agent (robots.txt disallows /api/, /search, /stream,
-    /checkout, /cart/, /tools, /download_check, /design_tokens - none of which
-    this script touches). See docs/PROJECT_PLAN.md, Sprint 1 (the R1 spike),
-    and docs/RUNBOOK.md.
+    Album discovery reads /music, not just the landing page - the landing page
+    only renders the newest ~16 releases as plain links; the rest of the back
+    catalog lives in a separate `data-client-items` JSON blob that Bandcamp's
+    own JS uses to lazily fill in the discography grid. Both sources are
+    combined and deduplicated, since neither one alone is the full catalog.
 
-    A full run across every album in the series takes hours by design (the
-    default delay averages about 5.5 minutes between albums) - run it in a
-    window you're fine leaving open, not as a quick one-off.
+    Only /music and /album/ pages are requested - both allowed under
+    bandcamp.com's robots.txt for a generic, honestly identified User-Agent
+    (robots.txt disallows /api/, /search, /stream, /checkout, /cart/, /tools,
+    /download_check, /design_tokens - none of which this script touches).
+    See docs/PROJECT_PLAN.md, Sprint 1 (the R1 spike), and docs/RUNBOOK.md.
+
+    A full run across the whole catalog (~146 albums as of writing, and
+    growing monthly) takes on the order of half a day by design at the
+    default delay (averages ~5.5 minutes between albums, so ~13 hours worst
+    case) - run it in a window you're fine leaving open, or across several
+    sessions, not as a quick one-off. It's fully resumable either way.
 
 .PARAMETER BandcampSubdomain
     The artist's Bandcamp subdomain, e.g. "prfmonthlytributeseries".
@@ -73,9 +80,28 @@ function Get-HtmlBody {
 }
 
 function Get-AlbumPaths {
-    param([string]$HomeHtml)
-    $found = [regex]::Matches($HomeHtml, 'href="(/album/[^"]+)"')
-    return @($found | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+    param([string]$MusicPageHtml)
+
+    # The /music page only renders the newest releases as plain <a href> links.
+    # The rest of the back catalog is a separate JSON blob (`data-client-items`)
+    # that Bandcamp's own JS uses to lazily fill in the discography grid -
+    # without it, older albums are silently invisible to a plain link scrape.
+    # (Found by comparing counts: 16 visible links vs. 146 actual albums.)
+    $visible = [regex]::Matches($MusicPageHtml, 'href="(/album/[^"]+)"') |
+        ForEach-Object { $_.Groups[1].Value }
+
+    $gridPaths = @()
+    $gridMatch = [regex]::Match($MusicPageHtml, 'data-client-items="([^"]*)"')
+    if ($gridMatch.Success) {
+        $decoded = [System.Net.WebUtility]::HtmlDecode($gridMatch.Groups[1].Value)
+        $items = $decoded | ConvertFrom-Json
+        $gridPaths = @($items | Where-Object { $_.type -eq "album" } | ForEach-Object { $_.page_url })
+    }
+    else {
+        Write-Warning "[warn] data-client-items not found - only visible links will be used, back catalog may be incomplete"
+    }
+
+    return @(($visible + $gridPaths) | Sort-Object -Unique)
 }
 
 function Get-TralbumData {
@@ -88,9 +114,10 @@ function Get-TralbumData {
 
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 
-Write-Host "Fetching album list from $baseUrl ..."
-$homeHtml = Get-HtmlBody -Url $baseUrl
-$allAlbumPaths = Get-AlbumPaths -HomeHtml $homeHtml
+$musicUrl = "$baseUrl/music"
+Write-Host "Fetching album list from $musicUrl ..."
+$musicHtml = Get-HtmlBody -Url $musicUrl
+$allAlbumPaths = Get-AlbumPaths -MusicPageHtml $musicHtml
 Write-Host "Found $($allAlbumPaths.Count) albums total."
 
 # Only the not-yet-harvested albums count against -MaxAlbums, so re-running
