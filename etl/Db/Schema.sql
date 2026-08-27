@@ -1,5 +1,6 @@
 -- Aliquot ETL staging schema.
--- 5 node types (Person, Artist, Release, Recording, Work) + 7 edge types (§2.2).
+-- 5 node types (Person, Artist, Release, Recording, Work) + 7 edge types (§2.2),
+-- plus one ETL-added 8th edge (performed_by - see its own comment below).
 -- FEATURES and SELECTED_BY are deliberately absent — blocked pending a separate
 -- forum/site-export ask to the founder (§2.2, §9). Add them when that's unblocked.
 -- SHARES_MEMBER and COVERS are derived at build time, never stored here (§2.2).
@@ -61,6 +62,7 @@ CREATE TABLE IF NOT EXISTS recording (
     slug                    TEXT UNIQUE,
     title                   TEXT NOT NULL,
     kind                    TEXT NOT NULL CHECK (kind IN ('cover', 'original')),
+    duration_seconds        REAL,
     audio_source_provider   TEXT,  -- open name: "bandcamp" | "archive_org" | "r2" | "youtube" | ... (§1.9)
     audio_source_ref        TEXT,
     musicbrainz_id          TEXT,
@@ -165,6 +167,25 @@ CREATE TABLE IF NOT EXISTS wrote (
 CREATE INDEX IF NOT EXISTS idx_wrote_person ON wrote(person_id);
 CREATE INDEX IF NOT EXISTS idx_wrote_work ON wrote(work_id);
 
+-- performed_by (Artist -> Recording) is an 8th edge, added beyond §2.2's
+-- original 7 during Sprint 2's Bandcamp normalization. §2.2 only models
+-- performance at the Person level (PERFORMED_ON), reachable via Person ->
+-- MEMBER_OF -> Artist - but Sprint 2 has no person-level roster yet (that's
+-- Sprint 3), while §2.3 needs cover recordings clustered around their
+-- covering artist for Shell 2a *now*. Bandcamp's own track data already
+-- names the performing artist directly, so recording this edge here avoids
+-- blocking layout on a roster resolution pass it doesn't actually depend on.
+-- Once Sprint 3/4 populate PERFORMED_ON for real members, this edge stays as
+-- the direct, always-available fallback - it is not superseded, just joined.
+CREATE TABLE IF NOT EXISTS performed_by (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    artist_id       TEXT NOT NULL REFERENCES artist(id) ON DELETE CASCADE,
+    recording_id    TEXT NOT NULL REFERENCES recording(id) ON DELETE CASCADE,
+    UNIQUE (artist_id, recording_id)
+);
+CREATE INDEX IF NOT EXISTS idx_performed_by_artist ON performed_by(artist_id);
+CREATE INDEX IF NOT EXISTS idx_performed_by_recording ON performed_by(recording_id);
+
 -- ── Override tables, kept separate, never merged (§8) ──────────────────
 
 CREATE TABLE IF NOT EXISTS manual_overrides (
@@ -177,6 +198,34 @@ CREATE TABLE IF NOT EXISTS manual_overrides (
     created_at      TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE (entity_type, entity_id, field)
 );
+
+-- ── Bandcamp raw staging (§5 Sprint 2: "land what Bandcamp gives you raw
+-- in SQLite, untransformed") ────────────────────────────────────────────
+-- Source of truth is scripts/harvest-bandcamp.ps1's output in
+-- etl/.cache/bandcamp/*.json; these tables are that same data loaded
+-- verbatim, kept separate from the normalized node/edge tables above so a
+-- change to the normalization logic can always be re-run from scratch
+-- without re-fetching anything from Bandcamp.
+
+CREATE TABLE IF NOT EXISTS bandcamp_album_raw (
+    album_id        INTEGER PRIMARY KEY,
+    slug            TEXT NOT NULL UNIQUE,  -- the /album/{slug} path segment
+    title           TEXT NOT NULL,
+    release_date    TEXT,
+    raw_json        TEXT NOT NULL,
+    harvested_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS bandcamp_track_raw (
+    track_id        INTEGER PRIMARY KEY,
+    album_id        INTEGER NOT NULL REFERENCES bandcamp_album_raw(album_id) ON DELETE CASCADE,
+    track_num       INTEGER,
+    artist          TEXT NOT NULL,
+    title           TEXT NOT NULL,
+    duration_seconds REAL,
+    mp3_128_url     TEXT  -- signed, ~24h expiry (§1.9) - reference only, never dereferenced at build time
+);
+CREATE INDEX IF NOT EXISTS idx_bandcamp_track_raw_album ON bandcamp_track_raw(album_id);
 
 CREATE TABLE IF NOT EXISTS contributor_submissions (
     id              INTEGER PRIMARY KEY AUTOINCREMENT,

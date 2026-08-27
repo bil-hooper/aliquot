@@ -8,9 +8,10 @@ Full plan, architecture decisions, data model, sprint schedule, and risk registe
 ## Layout
 
 ```
-web/     Vite + React + TypeScript + react-three-fiber — the renderer and UI
-etl/     C# console app — MusicBrainz/Discogs/Wikidata ETL into SQLite, then JSON export
-docs/    Project plan, decisions log, runbook
+web/       Vite + React + TypeScript + react-three-fiber — the renderer and UI
+etl/       C# console app — MusicBrainz/Discogs/Wikidata/Bandcamp ETL into SQLite, then JSON export
+scripts/   Standalone PowerShell tooling (e.g. the Bandcamp catalog harvester)
+docs/      Project plan, decisions log, runbook
 ```
 
 ## Working practices (§8 of the plan)
@@ -39,4 +40,6 @@ dotnet run
 
 ## Status
 
-Sprint 1 (Aug 24 – Sep 6, 2026) — scaffolding. See the plan's §5 for the full sprint schedule.
+Sprint 1 complete. Sprint 2 (Sep 7 – Sep 20, 2026) underway: Bandcamp catalog harvested (146 albums,
+3,830 tracks) and normalized into SQLite (cover releases → cover recordings → covering artists).
+See the plan's §5 for the full sprint schedule.

@@ -480,8 +480,8 @@ Two parallel tracks. The **Space Track** builds against synthetic data from Spri
 
 ### Sprint 2 — Core catalog + renderer spike · Sep 7 – Sep 20
 
-- [ ] **Scope: Bandcamp metadata only, for now.** Zach's blessing currently covers what's on the Bandcamp pages — track listings, release info, dates. A separate site or forum export is not yet cleared; don't scrape or ask for one until that's a separate conversation. Land what Bandcamp gives you raw in SQLite, untransformed.
-- [ ] Normalize into: cover releases → cover recordings → covering artists.
+- [x] ~~Scope: Bandcamp metadata only, for now.~~ **Done.** All 146 albums / 3,830 tracks harvested (`scripts/harvest-bandcamp.ps1`) and landed untransformed into `bandcamp_album_raw` / `bandcamp_track_raw`.
+- [x] ~~Normalize into: cover releases → cover recordings → covering artists.~~ **Done** via `Aliquot.Etl.Bandcamp.BandcampImporter`, idempotent (verified by re-running twice with identical output): 146 `release` rows, 3,830 `recording` rows, 1,249 distinct covering `artist` rows, 3,830 `appears_on` edges. Also added an 8th edge, `performed_by` (Artist → Recording) — outside §2.2's original 7, justified in `Schema.sql`'s own comment: Shell 2a (§2.3) needs recordings clustered around their covering artist now, and Bandcamp gives that directly without waiting on Sprint 3's person-level roster.
 - [ ] Write a synthetic-graph generator (15k nodes, realistic edge density) for renderer testing.
 - [ ] Renderer spike: InstancedMesh shells + LineSegments + OrbitControls. **Measure FPS with 15k nodes.**
 - [ ] **Decision gate:** R3F or vanilla Three.js. Commit and don't revisit.
