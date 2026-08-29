@@ -43,5 +43,9 @@ dotnet run
 Sprint 1 complete. Sprint 2 (Sep 7 – Sep 20, 2026) underway: Bandcamp catalog harvested (146 albums,
 3,830 tracks) and normalized into SQLite (cover releases → cover recordings → covering artists).
 Synthetic-graph generator for renderer testing done (`scripts/generate-synthetic-graph.mjs`).
-Next up: the renderer spike itself (InstancedMesh + LineSegments + OrbitControls, FPS measurement).
+Renderer spike (`web/src/scene/`) built — InstancedMesh shells, LineSegments edges, OrbitControls,
+live FPS HUD — but the actual FPS number still needs a human to open `http://localhost:5173`
+(`npm run dev` in `web/`) and read it; see `docs/DECISIONS.md` (2026-08-28) for why this session's
+tooling couldn't capture it automatically. That reading also settles the R3F-vs-vanilla-Three.js
+decision gate, the last item on Sprint 2's checklist.
 See the plan's §5 for the full sprint schedule.

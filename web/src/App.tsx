@@ -1,122 +1,80 @@
+import { Canvas } from '@react-three/fiber'
+import type { RootState } from '@react-three/fiber'
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
 import './App.css'
+import { useSyntheticGraph } from './graph/useSyntheticGraph'
+import { Scene } from './scene/Scene'
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+declare global {
+  interface Window {
+    __r3fState?: RootState
+  }
 }
 
-export default App
+// Sprint 2 renderer spike (plan sec 5): InstancedMesh shells + LineSegments +
+// OrbitControls, against the synthetic-graph generator's output, measuring
+// FPS at ~15k nodes. This is a stress-test harness, not the site's UI --
+// see docs/DECISIONS.md (2026-08-28) for the numbers this run produced and
+// what they mean for the R3F-vs-vanilla-Three.js decision gate.
+export default function App() {
+  const state = useSyntheticGraph('/data/synthetic-skeleton.json')
+  const [fps, setFps] = useState(0)
+  const [showEdges, setShowEdges] = useState(true)
+  const [showOuterShell, setShowOuterShell] = useState(true)
+
+  return (
+    <div id="spike-root">
+      <Canvas
+        camera={{ position: [70, 45, 95], fov: 50, near: 0.1, far: 2000 }}
+        gl={{ antialias: false }}
+        onCreated={(rootState) => {
+          // Dev-only debug hook (dead-code-eliminated in production builds):
+          // lets an external script force synchronous, GPU-synced render
+          // calls to measure real throughput even when the tab isn't visible
+          // to a compositor, since requestAnimationFrame -- what the on-page
+          // FPS meter relies on -- is throttled/paused for hidden tabs.
+          if (import.meta.env.DEV) window.__r3fState = rootState
+        }}
+      >
+        <color attach="background" args={['#05060a']} />
+        {state.status === 'ready' && (
+          <Scene
+            graph={state.graph}
+            showEdges={showEdges}
+            showOuterShell={showOuterShell}
+            onFpsSample={setFps}
+          />
+        )}
+      </Canvas>
+
+      <div id="hud">
+        <h1>Aliquot — renderer spike</h1>
+        {state.status === 'loading' && <p>Loading synthetic graph...</p>}
+        {state.status === 'error' && <p className="error">{state.message}</p>}
+        {state.status === 'ready' && (
+          <>
+            <p>
+              {state.graph.nodeCount.toLocaleString()} nodes, {state.graph.edgeCount.toLocaleString()} edges
+            </p>
+            <p className="fps" data-testid="fps-readout">
+              {fps} fps
+            </p>
+            <label>
+              <input type="checkbox" checked={showEdges} onChange={(e) => setShowEdges(e.target.checked)} />
+              Show edges ({state.graph.edgeCount.toLocaleString()})
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={showOuterShell}
+                onChange={(e) => setShowOuterShell(e.target.checked)}
+              />
+              Show shell 4 (faint outer, {(state.graph.shellCounts.originalPersonnel ?? 0).toLocaleString()}{' '}
+              personnel)
+            </label>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
