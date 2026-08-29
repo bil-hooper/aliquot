@@ -42,4 +42,6 @@ dotnet run
 
 Sprint 1 complete. Sprint 2 (Sep 7 – Sep 20, 2026) underway: Bandcamp catalog harvested (146 albums,
 3,830 tracks) and normalized into SQLite (cover releases → cover recordings → covering artists).
+Synthetic-graph generator for renderer testing done (`scripts/generate-synthetic-graph.mjs`).
+Next up: the renderer spike itself (InstancedMesh + LineSegments + OrbitControls, FPS measurement).
 See the plan's §5 for the full sprint schedule.

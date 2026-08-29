@@ -4,6 +4,10 @@ web/dist/
 web/dist-ssr/
 *.local
 
+# Regenerable test fixture — `node scripts/generate-synthetic-graph.mjs` rebuilds it.
+# Not source data, so it doesn't get the etl/aliquot.sqlite treatment (§8).
+web/public/data/synthetic-skeleton.json
+
 # ETL (etl/) — the SQLite file itself is the source of truth and IS committed (§8).
 # Only the disk-backed HTTP cache and build output are excluded.
 etl/.cache/

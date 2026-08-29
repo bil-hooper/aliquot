@@ -2,6 +2,15 @@
 
 Every architecture call, with a date and one line of reasoning (§8). Newest first.
 
+## 2026-08-28 — Sprint 2: synthetic-graph generator for the renderer spike
+
+- **`scripts/generate-synthetic-graph.mjs`**, plain Node (no dependencies) — writes `web/public/data/synthetic-skeleton.json`. Standalone tooling like the Bandcamp harvester, not part of the C# ETL: this is throwaway Space Track scaffolding (§5's parallel-tracks note — Space builds against synthetic data so it never blocks on Data), meant to be replaced by the real build-time JSON export once Sprint 3/4 get there, not a pipeline stage to maintain long-term.
+- **Grown bottom-up from cover recordings, not sized top-down.** Each synthetic cover recording either reuses an already-known original recording/release/artist or mints a new one (Zipf-weighted toward established ones), and likewise for its performing band. Every non-core node exists only because some edge pointed at it, so the graph has zero orphan nodes by construction — no separate cleanup pass needed. Verified: every shell's zero-degree count is 0 except shell 0 (the single core node, unlit and unconnected by design per §0).
+- **Layout implements §3.1's barycenter heuristic as a single pass, not the full 3–5 iteration version.** Shell 3 (original artists) is positioned in creation order (stand-in for "alphabetical or first-covered date"); shell 2 (covering bands) is ranked by the mean shell-3 position of what its recordings cover; shell 1 (members) is ranked by the mean shell-2 position of their band(s). Each rank maps onto a Fibonacci sphere (golden-angle spiral) per §2.3's full-sphere geometry. One pass already gets most of the "short spokes, not spaghetti" benefit per the plan's own text; further iteration is deferred to the real C# build-time layout, which is where §3.1 says it belongs anyway.
+- **Comps (shell 2b) count is hardcoded to 150, not the plan's original "~30" estimate** — the actual Bandcamp harvest (2026-08-25 entry, below) already shows the real series lands around there. Every other shell keeps the plan's §3.2 estimate as its target, scaled to hit the requested total node count.
+- **Result at the default 15,000-node target: 14,279 nodes (9 shells), 31,852 edges (2.23/node), 0.64 MB gzipped** — inside §3.2's stated 8k–15k nodes / 30k–60k edges / 1–3 MB gzipped budget. Deterministic for a given `--seed` (mulberry32 PRNG, no `Math.random`), and `--nodes`/`--seed` are exposed specifically so R6's "test with 20k nodes, not 15k" headroom check can reuse this same generator later without new code.
+- **Scope stops at the generator.** The renderer spike itself (InstancedMesh + LineSegments + OrbitControls, FPS measurement, the R3F-vs-vanilla-Three.js decision gate) is the next Sprint 2 checklist item and deliberately not started here.
+
 ## 2026-08-24 — Repo scaffolded
 
 - **Frontend:** Vite + React + TypeScript + `@react-three/fiber` + `@react-three/drei`, in `web/`. Per §1.3 — R3F gives React ergonomics with imperative escape hatches for the performance-critical 3D. Decision gate on R3F vs. vanilla Three.js is Sprint 2 (§5), not now.
