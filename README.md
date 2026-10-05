@@ -43,12 +43,13 @@ dotnet run
 Sprint 1 complete. Sprint 2 (Sep 7 – Sep 20, 2026) underway: Bandcamp catalog harvested (146 albums,
 3,830 tracks) and normalized into SQLite (cover releases → cover recordings → covering artists).
 Synthetic-graph generator for renderer testing done (`scripts/generate-synthetic-graph.mjs`).
-Renderer spike (`web/src/scene/`) built — InstancedMesh shells, LineSegments edges, OrbitControls,
-live FPS HUD — but the actual FPS number still needs a human to open `http://localhost:5173`
-(`npm run dev` in `web/`) and read it; see `docs/DECISIONS.md` (2026-08-28) for why this session's
-tooling couldn't capture it automatically. That reading also settles the R3F-vs-vanilla-Three.js
-decision gate, the last item on Sprint 2's checklist.
+**Sprint 2 complete:** renderer spike (`web/src/scene/`) built and the R3F-vs-vanilla-Three.js
+decision gate is closed — staying with React Three Fiber, on the strength of a 45fps reading for
+the full worst-case 15k-node/31,852-edge scene on a phone GPU (the primary dev machine's own GPU
+turned out to be software-rendered — a real driver problem, not a settings issue; see
+`docs/DECISIONS.md`, 2026-10-04/05).
 Sprint 3's GPU-picking spike (`web/src/scene/PickingLayer.tsx` + `PickingController.tsx`) pulled
-forward and built too — same "needs a human to look" caveat applies; see `docs/DECISIONS.md`
-(2026-10-04).
+forward and confirmed working too — hover and click both correctly resolve nodes via an offscreen
+render-target color-ID lookup, no raycasting. Focused-subgraph edge highlighting (dimming
+non-neighbor edges) is the next piece, not yet built.
 See the plan's §5 for the full sprint schedule.
