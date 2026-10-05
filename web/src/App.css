@@ -55,3 +55,9 @@
   margin-top: 6px;
   cursor: pointer;
 }
+
+#hud hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  margin: 10px 0 6px;
+}

@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import type { GraphNode, SyntheticGraph } from '../graph/types'
 import { EdgeLines } from './EdgeLines'
 import { FpsMeter } from './FpsMeter'
+import { PickingController } from './PickingController'
 import { ShellInstances } from './ShellInstances'
 
 interface SceneProps {
@@ -10,6 +11,9 @@ interface SceneProps {
   showEdges: boolean
   showOuterShell: boolean
   onFpsSample: (fps: number) => void
+  onHoverChange: (node: GraphNode | null) => void
+  onFocusChange: (node: GraphNode | null) => void
+  onPickLatency: (ms: number) => void
 }
 
 // Outward per plan sec 2.3's ordering: core, members, covering bands and
@@ -17,7 +21,15 @@ interface SceneProps {
 // faint outer personnel shell.
 const SHELL_ORDER = ['0', '1', '2', '2a', '2b', '3', '3a', '3b', '4']
 
-export function Scene({ graph, showEdges, showOuterShell, onFpsSample }: SceneProps) {
+export function Scene({
+  graph,
+  showEdges,
+  showOuterShell,
+  onFpsSample,
+  onHoverChange,
+  onFocusChange,
+  onPickLatency,
+}: SceneProps) {
   const nodesByShell = useMemo(() => {
     const map = new Map<string, GraphNode[]>()
     for (const node of graph.nodes) {
@@ -32,6 +44,12 @@ export function Scene({ graph, showEdges, showOuterShell, onFpsSample }: ScenePr
     <>
       <FpsMeter onSample={onFpsSample} />
       <OrbitControls enableDamping dampingFactor={0.08} minDistance={5} maxDistance={400} />
+      <PickingController
+        nodes={graph.nodes}
+        onHoverChange={onHoverChange}
+        onFocusChange={onFocusChange}
+        onPickLatency={onPickLatency}
+      />
       <EdgeLines nodes={graph.nodes} edges={graph.edges} visible={showEdges} />
       {SHELL_ORDER.map((shell) => {
         if (shell === '4' && !showOuterShell) return null

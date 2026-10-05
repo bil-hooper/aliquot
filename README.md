@@ -48,4 +48,7 @@ live FPS HUD — but the actual FPS number still needs a human to open `http://l
 (`npm run dev` in `web/`) and read it; see `docs/DECISIONS.md` (2026-08-28) for why this session's
 tooling couldn't capture it automatically. That reading also settles the R3F-vs-vanilla-Three.js
 decision gate, the last item on Sprint 2's checklist.
+Sprint 3's GPU-picking spike (`web/src/scene/PickingLayer.tsx` + `PickingController.tsx`) pulled
+forward and built too — same "needs a human to look" caveat applies; see `docs/DECISIONS.md`
+(2026-10-04).
 See the plan's §5 for the full sprint schedule.

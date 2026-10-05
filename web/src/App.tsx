@@ -1,7 +1,8 @@
 import { Canvas } from '@react-three/fiber'
 import type { RootState } from '@react-three/fiber'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import './App.css'
+import type { GraphNode } from './graph/types'
 import { useSyntheticGraph } from './graph/useSyntheticGraph'
 import { Scene } from './scene/Scene'
 
@@ -16,11 +17,22 @@ declare global {
 // FPS at ~15k nodes. This is a stress-test harness, not the site's UI --
 // see docs/DECISIONS.md (2026-08-28) for the numbers this run produced and
 // what they mean for the R3F-vs-vanilla-Three.js decision gate.
+//
+// Also carries the Sprint 3 GPU-picking spike (plan sec 3.2): hover/click
+// resolve to a node via an offscreen render-target color-ID lookup, not
+// raycasting -- see web/src/scene/PickingLayer.tsx and docs/DECISIONS.md.
 export default function App() {
   const state = useSyntheticGraph('/data/synthetic-skeleton.json')
   const [fps, setFps] = useState(0)
   const [showEdges, setShowEdges] = useState(true)
   const [showOuterShell, setShowOuterShell] = useState(true)
+  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null)
+  const [focusedNode, setFocusedNode] = useState<GraphNode | null>(null)
+  const [pickLatencyMs, setPickLatencyMs] = useState<number | null>(null)
+
+  const handleHoverChange = useCallback((node: GraphNode | null) => setHoveredNode(node), [])
+  const handleFocusChange = useCallback((node: GraphNode | null) => setFocusedNode(node), [])
+  const handlePickLatency = useCallback((ms: number) => setPickLatencyMs(ms), [])
 
   return (
     <div id="spike-root">
@@ -43,6 +55,9 @@ export default function App() {
             showEdges={showEdges}
             showOuterShell={showOuterShell}
             onFpsSample={setFps}
+            onHoverChange={handleHoverChange}
+            onFocusChange={handleFocusChange}
+            onPickLatency={handlePickLatency}
           />
         )}
       </Canvas>
@@ -72,6 +87,16 @@ export default function App() {
               Show shell 4 (faint outer, {(state.graph.shellCounts.originalPersonnel ?? 0).toLocaleString()}{' '}
               personnel)
             </label>
+            <hr />
+            <p data-testid="hover-readout">
+              Hover: {hoveredNode ? `${hoveredNode.label} (${hoveredNode.shell})` : '—'}
+            </p>
+            <p data-testid="focus-readout">
+              Focus: {focusedNode ? `${focusedNode.label} (${focusedNode.shell})` : '—'}
+            </p>
+            <p data-testid="pick-latency-readout">
+              Last pick: {pickLatencyMs === null ? '—' : `${pickLatencyMs.toFixed(2)} ms`}
+            </p>
           </>
         )}
       </div>
